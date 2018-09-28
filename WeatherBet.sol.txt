@@ -92,7 +92,7 @@ contract WeatherBet is usingOraclize{
         }
     }
     
-   /* function result(bytes32 _betId, uint _resTemp) returns (bool) {
+   /* function result(uint _betId, uint _resTemp) returns (bool) {
        // uint _resTemp = oraclize_query("URL", "json(http://api.openweathermap.org/data/2.5/forecast?q=london,us&mode=json&appid=aad54055817b7630b3545053cfe8fed5).list[0].main.temp",
         if (_resTemp > est_temp){
             bets[_betId].higher.transfer(2 * bets[_betId].amount);
