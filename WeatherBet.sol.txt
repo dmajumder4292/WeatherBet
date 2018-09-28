@@ -1,0 +1,107 @@
+pragma solidity ^0.4.0;
+import "github.com/oraclize/ethereum-api/oraclizeAPI.sol";
+
+contract WeatherBet is usingOraclize{
+    
+    uint est_temp = 100;
+    uint count;
+    event LogNewOraclizeQuery(string description);
+    
+    struct Bet {
+        uint id;
+        address higher;
+        address lower;
+        uint amount;
+        bool betFinal;
+        bool completed;
+    }
+    
+    mapping (uint => Bet) bets;
+    
+    function createBet(uint betType) payable returns (uint id, address higher, address lower, uint amount) {
+        require(msg.sender.balance >= msg.value);
+        
+        //bytes32 betId = keccak256(msg.sender, msg.value);
+        count++;
+        bets[count].id = count;
+        if (betType == 1){
+            bets[count].higher = msg.sender;
+        } else {
+            bets[count].lower = msg.sender;
+        }
+        bets[count].amount = msg.value;
+        bets[count].completed = false;
+        bets[count].betFinal = false;
+        
+        return (
+            bets[count].id,
+            bets[count].higher,
+            bets[count].lower,
+            bets[count].amount
+        );
+    }
+    
+    function acceptBet(uint _betId) payable returns (uint id, address higher, address lower, uint amount) {
+        require(msg.sender.balance >= msg.value);
+        require (bets[_betId].amount == msg.value);
+        bets[_betId].lower = msg.sender;
+        bets[_betId].betFinal = true;
+        
+         return (
+            bets[_betId].id,
+            bets[_betId].higher,
+            bets[_betId].lower,
+            bets[_betId].amount
+        );
+    }
+    
+    function __callback(bytes32 myid, string result) {
+       if (msg.sender != oraclize_cbAddress()) revert();
+       uint _resTemp = stringToUint(result);
+       for (uint i = 0; i <= 10; i++){
+           if (_resTemp > est_temp){
+            bets[i].higher.transfer(2 * bets[i].amount);
+        } else if (_resTemp < est_temp){
+            bets[i].lower.transfer(2 * bets[i].amount);
+        } else {
+            bets[i].higher.transfer(bets[i].amount);
+            bets[i].lower.transfer(bets[i].amount);
+        }
+        bets[i].completed = true;
+       }
+    }
+    
+    function updateTemperature() payable {
+        if (oraclize_getPrice("URL") > this.balance) {
+           LogNewOraclizeQuery("Oraclize query was NOT sent, please add some ETH to cover for the query fee");
+       } else {
+           LogNewOraclizeQuery("Oraclize query was sent, standing by for the answer..");
+           oraclize_query("URL", "json(http://api.openweathermap.org/data/2.5/forecast?q=london,us&mode=json&appid=aad54055817b7630b3545053cfe8fed5).list[0].main.temp");
+       }
+    }
+    
+    function stringToUint(string s) returns (uint) {
+        bytes memory b = bytes(s);
+        uint i;
+        uint result = 0;
+        for (i = 0; i < b.length; i++) {
+            uint c = uint(b[i]);
+            if (c >= 48 && c <= 57) {
+                result = result * 10 + (c - 48);
+            }
+        }
+    }
+    
+   /* function result(bytes32 _betId, uint _resTemp) returns (bool) {
+        uint _resTemp = oraclize_query("URL", "json(http://api.openweathermap.org/data/2.5/forecast?q=london,us&mode=json&appid=aad54055817b7630b3545053cfe8fed5).list[0].main.temp",
+        if (_resTemp > est_temp){
+            bets[_betId].higher.transfer(2 * bets[_betId].amount);
+        } else if (_resTemp < est_temp){
+            bets[_betId].lower.transfer(2 * bets[_betId].amount);
+        } else {
+            bets[_betId].higher.transfer(bets[_betId].amount);
+            bets[_betId].lower.transfer(bets[_betId].amount);
+        }
+        bets[_betId].completed = true;
+    } */
+}
