@@ -40,10 +40,14 @@ contract WeatherBet is usingOraclize{
         );
     }
     
-    function acceptBet(uint _betId) payable returns (uint id, address higher, address lower, uint amount) {
+     function acceptBet(uint _betId) payable returns (uint id, address higher, address lower, uint amount) {
         require(msg.sender.balance >= msg.value);
         require (bets[_betId].amount == msg.value);
-        bets[_betId].lower = msg.sender;
+        if(bets[_betId].lower == address(0x0)){
+            bets[_betId].lower = msg.sender;
+        } else {
+            bets[_betId].higher = msg.sender;
+        }
         bets[_betId].betFinal = true;
         
          return (
